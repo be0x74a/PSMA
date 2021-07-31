@@ -1,0 +1,1 @@
+start /b rdfc.exe ..\collected_data 10 MB

@@ -1,0 +1,111 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:alpine
+    container_name: psma_db
+    environment:
+      POSTGRES_USER: psma
+      POSTGRES_PASSWORD: ${PSQL_PASS}
+      POSTGRES_DB: psma_db
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis:6-alpine
+    container_name: psma_message_broker
+    command: redis-server --requirepass ${REDIS_PASS}
+    ports:
+      - '6379:6379'
+
+  sftp:
+    image: atmoz/sftp:alpine
+    container_name: psma_sftp
+    ports:
+      - '2222:22'
+    command: psma:${SFTP_PASS}:::storage
+
+  host:
+    build: psma
+    container_name: psma_host
+    environment:
+      PSQL_PASS: ${PSQL_PASS}
+      SFTP_PASS: ${SFTP_PASS}
+      REDIS_PASS: ${REDIS_PASS}
+      FLASK_ENV: ${FLASK_ENV:-production}
+      CLEAN_ENV: ${CLEAN_ENV:-True}
+    ports:
+      - '8080:5000'
+    depends_on:
+      - db
+      - redis
+      - sftp
+
+## MONITORING
+
+  grafama:
+      image: grafana/grafana:latest
+      container_name: grafana
+      user: root
+      ports:
+        - 9090:3000
+      volumes:
+        - ./grafana/data:/var/lib/grafana
+      depends_on:
+        - prometheus
+
+  prometheus:
+    image: prom/prometheus:latest
+    user: root
+    container_name: prometheus
+    ports:
+      - 9091:9090
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./prometheus/data:/prometheus
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    depends_on:
+      - cadvisor
+      - node_exporter
+      - celery_exporter
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    command:
+      - '--global_housekeeping_interval=5s'
+      - '--housekeeping_interval=5s'
+    ports:
+      - 9092:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+      - host
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    ports: 
+      - '9093:9100'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+    depends_on:
+      - host
+
+  celery_exporter:
+    image: danihodovic/celery-exporter
+    container_name: celery_exporter
+    command: --broker-url=redis://:${REDIS_PASS}@redis:6379/0
+    ports: 
+      - '9094:9808'
+    depends_on:
+      - host

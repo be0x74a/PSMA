@@ -1,0 +1,4 @@
+module:
+  name: "StubbedDCSModule"
+  type: data_collection
+  comment: "Generates 10MB of pseudo-random data"

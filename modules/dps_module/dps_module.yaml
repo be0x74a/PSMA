@@ -1,0 +1,4 @@
+module:
+  name: "StubbedDPSModule"
+  type: data_processing
+  comment: "Computes SHA256 of all collected data"
