@@ -13,7 +13,7 @@ click-repl==0.1.6
 cryptography==39.0.1
 debtcollector==2.2.0
 fasteners==0.16
-Flask==1.1.2
+Flask==2.3.2
 Flask-SQLAlchemy==2.5.1
 greenlet==1.0.0
 idna==2.10
