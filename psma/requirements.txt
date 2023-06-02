@@ -10,7 +10,7 @@ click==7.1.2
 click-didyoumean==0.0.3
 click-plugins==1.1.1
 click-repl==0.1.6
-cryptography==39.0.1
+cryptography==41.0.0
 debtcollector==2.2.0
 fasteners==0.16
 Flask==1.1.2
